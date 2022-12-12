@@ -19,6 +19,7 @@ let butterflies = [];
 let counter = 0;
 let restart = false;
 let light = 300;
+let score = 0;
 
 //sound
 let forestAmbience;
@@ -68,7 +69,7 @@ function setup() {
 
 function draw() {
   counter++;
-  light--;
+  light -= 0.5;
 
   background(bg);
   
@@ -78,31 +79,39 @@ function draw() {
   fill(255);
   rect(10,10,light,20);
   
-  if (light <= 0){
-    print('GAME OVER');
-    print('PRESS SPACE TO CONTINUE PLAYING');
-    rect(0,0,width,height);
-  }
-  
-  if ( restart ){
-    light += 300;
-    restart = false;
-  }
-
   // image(grass, 0, 400); // https://p5js.org/examples/image-load-and-display-image.html
 
-  /*
   // automated butterfly spawns
-  if ( counter % 200 == 0 ){
-    butterflies.push(new Butterfly());
+  if ( counter % 80 == 0 && light > 0 ){
+    butterflies.push(new Sprite(random(0,width),random(100,height-100),20,20,'static'));
   }
 
   for ( let i = butterflies.length - 1; i >= 0; i-- ){
     let b = butterflies[i];
-    b.drawButterfly();
-    b.updateButterfly();
+    if ( player.overlaps(b) ){
+      b.remove();
+      light += 35;
+      score++;
+      print(score);
+    }
   }
-  */
+  
+  if (light <= 0){
+    print('GAME OVER');
+    print('PRESS ANY KEY TO CONTINUE PLAYING');
+    rect(0,0,width,height);
+    
+    for ( let i = butterflies.length - 1; i >= 0; i-- ){
+      let b = butterflies[i];
+      b.remove();
+    }
+  }
+  
+  if ( restart ){
+    light += 300;
+    score = 0;
+    restart = false;
+  }
 }
 
 function keyPressed(){
