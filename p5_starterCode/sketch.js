@@ -1,13 +1,30 @@
 // Si Yue Jiang -- Creative Coding F22 Final Project
 
-let p; // player character
+/*
+REFERENCES:
+Images: https://p5js.org/reference/#/p5/image
+Sound: https://p5js.org/reference/#/libraries/p5.sound
+Play Library: https://p5play.org/docs/classes/Sprite.html
+*/
+
+// sprites
+let player;
+let ground;
+let leftBorder;
+let rightBorder;
+let ceiling;
 let butterflies = [];
 
+// light bar
 let counter = 0;
+let restart = false;
+let light = 300;
 
+//sound
 let forestAmbience;
 let grassSoundEffect;
 
+//images
 let bg;
 let grass;
 let bf; // butterfly
@@ -18,33 +35,65 @@ function preload(){
   grassSoundEffect = loadSound('grass-sound-effect.mp3');
 
   // image files
-  bg = loadImage('dark-forest.jpg');
+  bg = loadImage('dark-forest.jpg'); // replace later
   grass = loadImage('grass.png')
   bf = loadImage('butterfly.png');
 }
 
 function setup() {
-  createCanvas(1800,900);
+  frameRate = 60;
+  
+  createCanvas(1000,800);
   forestAmbience.play();
+  
+  world.gravity.y = 7;
+  
+  // ground placeholder
+  ground = new Sprite(width/2,780,width,5,'static'); // (x,  y,  w,  h, collider)
+  ground.color = 'white';
+  
+  // world borders
+  leftBorder = new Sprite(-5,0,5,height*2,'static');
+  rightBorder = new Sprite(width+5,0,5,height*2,'static');
+  ceiling = new Sprite(0,-5,width*2,5,'static');
 
-  p = new Player();
+  // player character
+  player = new Sprite(width/2,700,40,40); // (x,  y,  w,  h)
+  
+  if ( player.colliding(ground) ){
+    player.velocity.y = -5;
+  }
+  
 }
 
 function draw() {
   counter++;
+  light--;
 
   background(bg);
-
-  // ground placeholder
+  
+  // light bar
   fill(0);
-  stroke(255);
-  strokeWeight(3);
-  rect(-10, height-200, width+10,200)
+  rect(10,10,300,20);
+  fill(255);
+  rect(10,10,light,20);
+  
+  if (light <= 0){
+    print('GAME OVER');
+    print('PRESS SPACE TO CONTINUE PLAYING');
+    rect(0,0,width,height);
+  }
+  
+  if ( restart ){
+    light += 300;
+    restart = false;
+  }
 
-  image(grass, 0, 400); // https://p5js.org/examples/image-load-and-display-image.html
+  // image(grass, 0, 400); // https://p5js.org/examples/image-load-and-display-image.html
 
+  /*
   // automated butterfly spawns
-  if ( counter % 100 == 0 ){
+  if ( counter % 200 == 0 ){
     butterflies.push(new Butterfly());
   }
 
@@ -53,22 +102,22 @@ function draw() {
     b.drawButterfly();
     b.updateButterfly();
   }
-
-  p.drawPlayer();
-  p.updatePlayer();
+  */
 }
 
-class Player{
-  constructor(){
-    this.position = createVector(width/2,height-400)
+function keyPressed(){
+  if ( light <= 0 ){
+    restart = true;
   }
-
-  drawPlayer(){
-    rect(this.position.x, this.position.y-50);
+  
+  if ( kb.pressing('left') ){
+    player.move(800,'left',7);
   }
-
-  updatePlayer(){
-
+  if ( kb.pressing('right') ){
+    player.move(800,'right',7);
+  }
+  if ( kb.presses('up') ){
+    player.move(200,'up',7);    
   }
 }
 
@@ -79,7 +128,7 @@ class Butterfly{
   }
 
   drawButterfly(){
-    if ( this.timer < 100 ){
+    if ( this.timer < 200 ){
       tint(255,255-this.timer*2); // https://p5js.org/examples/image-transparency.html
       image(bf, this.position.x, this.position.y, bf.width/2, bf.height/2);
     }
