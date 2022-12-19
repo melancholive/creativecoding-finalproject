@@ -13,7 +13,9 @@ let ground;
 let leftBorder;
 let rightBorder;
 let ceiling;
-let butterflies = [];
+let fireflies = [];
+let fireflyGlows = [];
+
 
 // light bar
 let counter = 0;
@@ -24,21 +26,28 @@ let score = 0;
 //sound
 let forestAmbience;
 let grassSoundEffect;
+let bonesCrunchingEffect;
 
 //images
 let bg;
 let grass;
-let bf; // butterfly
+let ff; // firefly
+let endScreen;
 
 function preload(){
   // sound files
-  forestAmbience = loadSound('forest-ambience.mp3');
-  grassSoundEffect = loadSound('grass-sound-effect.mp3');
+  forestAmbience = loadSound('data/forest-ambience.mp3');
+  grassSoundEffect = loadSound('data/grass-sound-effect.mp3');
+  bonesCrunchingEffect = loadSound('data/bones-crunching-effect.mp3');
 
   // image files
-  bg = loadImage('dark-forest.jpg'); // replace later
-  grass = loadImage('grass.png')
-  bf = loadImage('butterfly.png');
+  bg = loadImage('data/dark-forest.png');
+  grass = loadImage('data/grass.png')
+  bf = loadImage('data/butterfly.png');
+  endScreen = createVideo('data/end-screen.mp4');
+  endScreen.hide(); // hides the video from corner
+  endScreen.loop();
+  
 }
 
 function setup() {
@@ -46,12 +55,16 @@ function setup() {
   
   createCanvas(1000,800);
   forestAmbience.play();
+  bonesCrunchingEffect.play();
+  bonesCrunchingEffect.loop();
+  bonesCrunchingEffect.setVolume(0.05);
   
   world.gravity.y = 7;
   
   // ground placeholder
   ground = new Sprite(width/2,780,width,5,'static'); // (x,  y,  w,  h, collider)
-  ground.color = 'white';
+  ground.color = 'black';
+  ground.visible = false;
   
   // world borders
   leftBorder = new Sprite(-5,0,5,height*2,'static');
@@ -81,29 +94,44 @@ function draw() {
   
   // image(grass, 0, 400); // https://p5js.org/examples/image-load-and-display-image.html
 
-  // automated butterfly spawns
+  // automated firefly spawns
   if ( counter % 80 == 0 && light > 0 ){
-    butterflies.push(new Sprite(random(0,width),random(100,height-100),20,20,'static'));
+    fireflies.push(new Sprite(random(0,width),random(100,height-100),20,20,'static'));
+    fireflyGlows.push(new Firefly());
   }
 
-  for ( let i = butterflies.length - 1; i >= 0; i-- ){
-    let b = butterflies[i];
-    if ( player.overlaps(b) ){
-      b.remove();
+  for ( let i = fireflies.length - 1; i >= 0; i-- ){
+    let f = fireflies[i];
+    f.visible = false; // makes sprites invisible
+    // creates firefly glow objects that correlate with firefly sprites
+    fireflyGlows[i].drawFirefly(f.x, f.y);
+    fireflyGlows[i].updateFirefly();
+    if ( player.overlaps(f) ){ // if a player collides with a firefly sprite, you gain more light
+      f.remove();
       light += 35;
       score++;
       print(score);
+      fireflyGlows[i].isCollected();
     }
   }
   
-  if (light <= 0){
+  if (light <= 0){ // END SCREEN -- when light runs out
     print('GAME OVER');
     print('PRESS ANY KEY TO CONTINUE PLAYING');
+    
+    fill(0);
     rect(0,0,width,height);
     
-    for ( let i = butterflies.length - 1; i >= 0; i-- ){
-      let b = butterflies[i];
-      b.remove();
+    player.visible = false;
+    bonesCrunchingEffect.setVolume(1); // https://p5js.org/reference/#/p5.SoundFile/setVolume
+    forestAmbience.setVolume(0.1);
+    
+    image(endScreen, 200, 100);
+    
+    for ( let i = fireflies.length - 1; i >= 0; i-- ){ // makes old sprite disappear from canvas
+      let f = fireflies[i];
+      f.remove();
+      fireflyGlows[i].isCollected();
     }
   }
   
@@ -111,12 +139,16 @@ function draw() {
     light += 300;
     score = 0;
     restart = false;
+    forestAmbience.setVolume(1);
+    bonesCrunchingEffect.setVolume(0.05);
   }
 }
 
 function keyPressed(){
   if ( light <= 0 ){
     restart = true;
+    player.visible = true;
+    bonesCrunchingEffect.stop(0);
   }
   
   if ( kb.pressing('left') ){
@@ -130,22 +162,31 @@ function keyPressed(){
   }
 }
 
-class Butterfly{
+class Firefly{
   constructor(){
-    this.position = createVector(random(0,width),random(0,height));
-    this.timer = random(-20,20);
+    this.position = createVector(0,0);
+    this.multiplier = 0.1;
+    this.collected = false;
   }
 
-  drawButterfly(){
-    if ( this.timer < 200 ){
-      tint(255,255-this.timer*2); // https://p5js.org/examples/image-transparency.html
-      image(bf, this.position.x, this.position.y, bf.width/2, bf.height/2);
+  drawFirefly(posX,posY){
+    if (this.collected == false){
+      stroke(255);
+      strokeWeight(0.3);
+      fill(255,50);
+      circle(posX, posY, 5*this.multiplier);
+      circle(posX, posY, 15*this.multiplier);
+      circle(posX, posY, 45*this.multiplier);
     }
   }
 
-  updateButterfly(){
-    this.timer++;
-    this.position.x = this.position.x + random(-5,5);
-    this.position.y = this.position.y + random(-5,5);
+  updateFirefly(){
+    if (this.multiplier <= 1){
+      this.multiplier = this.multiplier + 0.01;
+    }
+  }
+  
+  isCollected(){
+    this.collected = true;
   }
 }
