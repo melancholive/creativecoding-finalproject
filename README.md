@@ -1,6 +1,8 @@
 # creativecoding_final_siyue
 this is my creative coding final project :D
 
+NOTE: Please copy and paste the index file of the final sketch when testing out previous pushes. Image files are also not properly directed before Push 4.
+
 INTRODUCTION: you are a fairy who has lost their way in the forbidden forest. night has fallen and the monsters of the forest are seeking you as their prey. however, these monsters are afraid of light and luckily, you still have a lantern on hand, collect fireflies to keep your lantern lit.
 
 roundtable discussion presentation link:

@@ -16,7 +16,6 @@ let rightBorder;
 let ceiling;
 let fireflies = [];
 let fireflyGlows = [];
-let monsterSprites = [];
 let monsters = [];
 let death = false;
 
@@ -28,7 +27,6 @@ let score = 0;
 
 //sound
 let forestAmbience;
-let grassSoundEffect;
 let bonesCrunchingEffect;
 let monsterGrowlingEffect;
 
@@ -39,33 +37,31 @@ let endScreen;
 let spriteRight;
 let spriteLeft;
 let vignette;
-let leftWalkingMonster;
-let rightWalkingMonster;
 let monsterImages = [];
 
 function preload(){
   // sound files
   forestAmbience = loadSound('data/forest-ambience.mp3');
-  grassSoundEffect = loadSound('data/grass-sound-effect.mp3');
   bonesCrunchingEffect = loadSound('data/bones-crunching-effect.mp3');
   monsterGrowlingEffect = loadSound('data/monster-growling-effect.mp3');
 
   // image files
   bg = loadImage('data/dark-forest.png');
-  grass = loadImage('data/grass.png')
   bf = loadImage('data/butterfly.png');
   endScreen = createVideo('data/end-screen.mp4');
   endScreen.hide(); // hides the video from corner
-  endScreen.loop();
   spriteRight = loadImage('data/sprite-right.png');
   spriteLeft = loadImage('data/sprite-left.png');
   vignette = loadImage('data/vignette.png');
   monsterImages[0] = loadImage('data/left-walking-monster.png');
   monsterImages[1] = loadImage('data/right-walking-monster.png');
+  monsterImages[2] = loadImage('data/left-land-monster.png');
+  monsterImages[3] = loadImage('data/right-land-monster.png');
 }
 
 function setup() {
   frameRate = 60;
+  getAudioContext().suspend(); // mimics the autoplay policy
   
   createCanvas(1000,800);
   forestAmbience.play();
@@ -76,6 +72,8 @@ function setup() {
   monsterGrowlingEffect.setVolume(0.05);
   monsterGrowlingEffect.play();
   monsterGrowlingEffect.loop();
+  endScreen.play();
+  endScreen.loop();
   
   world.gravity.y = 7;
   
@@ -99,6 +97,8 @@ function setup() {
   // monsters
   monsterImages[0].resize(monsterImages[0].height/5,0);
   monsterImages[1].resize(monsterImages[1].height/5,0);
+  monsterImages[2].resize(monsterImages[2].height/5.5,0);
+  monsterImages[3].resize(monsterImages[3].height/5.5,0);
   
   if ( player.colliding(ground) ){
     player.velocity.y = -5;
@@ -124,7 +124,7 @@ function draw() {
   
   // automated monster spawns
   if ( counter > 500 && counter % 200 == 0 && light > 0 ){ 
-    let temp = int(random(0,2));
+    let temp = int(random(0,4));
     let posX;
     if ( temp % 2 == 0 ){ // even numbers have left facing monsters, odd numbers have right facing monsters
       posX = width + monsterImages[temp].width;
@@ -132,7 +132,6 @@ function draw() {
       posX = -monsterImages[temp].width;
     }
     monsters.push(new Monster(monsterImages[temp].height,temp,posX));
-    monsterSprites.push(new Sprite(posX,780-monsterImages[temp].height,monsterImages[temp].width,monsterImages[temp].height));
   }
   
   for ( let i = monsters.length - 1; i >= 0; i-- ){
@@ -204,7 +203,7 @@ function draw() {
   }
   
   if ( restart ){
-    light += 300;
+    light = 300;
     score = 0;
     count = 0;
     restart = false;
@@ -222,9 +221,14 @@ function draw() {
 }
 
 function keyPressed(){
-  if ( light <= 0 ){
+  userStartAudio();
+  endScreen.play();
+  
+  if ( light <= 0 || death ){
     restart = true;
     player.visible = true;
+    player.x = width/2;
+    player.y = 700;
     bonesCrunchingEffect.setVolume(0.05);
   }
   
@@ -239,6 +243,11 @@ function keyPressed(){
   if ( kb.presses('up') ){
     player.move(200,'up',7);    
   }
+}
+
+function mousePressed(){
+  userStartAudio();
+  endScreen.play();
 }
 
 class Firefly{
@@ -298,5 +307,3 @@ class Monster{
     }
   }
 }
-
-
