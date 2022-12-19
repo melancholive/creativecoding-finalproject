@@ -16,7 +16,9 @@ let rightBorder;
 let ceiling;
 let fireflies = [];
 let fireflyGlows = [];
+let monsterSprites = [];
 let monsters = [];
+let death = false;
 
 // light bar
 let counter = 0;
@@ -39,6 +41,7 @@ let spriteLeft;
 let vignette;
 let leftWalkingMonster;
 let rightWalkingMonster;
+let monsterImages = [];
 
 function preload(){
   // sound files
@@ -57,8 +60,8 @@ function preload(){
   spriteRight = loadImage('data/sprite-right.png');
   spriteLeft = loadImage('data/sprite-left.png');
   vignette = loadImage('data/vignette.png');
-  leftWalkingMonster = loadImage('data/left-walking-monster.png');
-  rightWalkingMonster = loadImage('data/right-walking-monster.png');
+  monsterImages[0] = loadImage('data/left-walking-monster.png');
+  monsterImages[1] = loadImage('data/right-walking-monster.png');
 }
 
 function setup() {
@@ -93,6 +96,10 @@ function setup() {
   spriteRight.resize(60,0);
   spriteLeft.resize(60,0);
   
+  // monsters
+  monsterImages[0].resize(monsterImages[0].height/5,0);
+  monsterImages[1].resize(monsterImages[1].height/5,0);
+  
   if ( player.colliding(ground) ){
     player.velocity.y = -5;
   }
@@ -100,6 +107,7 @@ function setup() {
 }
 
 function draw() {
+  // print(counter);
   counter++;
   light -= 0.5;
 
@@ -114,10 +122,41 @@ function draw() {
     image(spriteLeft,player.x-30,player.y-35);
   }
   
+  // automated monster spawns
+  if ( counter > 500 && counter % 200 == 0 && light > 0 ){ 
+    let temp = int(random(0,2));
+    let posX;
+    if ( temp % 2 == 0 ){ // even numbers have left facing monsters, odd numbers have right facing monsters
+      posX = width + monsterImages[temp].width;
+    } else {
+      posX = -monsterImages[temp].width;
+    }
+    monsters.push(new Monster(monsterImages[temp].height,temp,posX));
+    monsterSprites.push(new Sprite(posX,780-monsterImages[temp].height,monsterImages[temp].width,monsterImages[temp].height));
+  }
+  
+  for ( let i = monsters.length - 1; i >= 0; i-- ){
+    let m = monsters[i];
+    m.drawMonster(monsterImages[m.type]);
+    m.updateMonster();
+    
+    if ( player.x >= m.position.x && player.x <= m.position.x+monsterImages[m.type].width && player.y > m.position.y && player.y <= m.position.y+monsterImages[m.type].height){
+      death = true;
+    }
+  }
+  
   // light bar
-  fill(0);
+  let trans;
+  if ( light > 0 && death == false ){
+    trans = 255;
+    strokeWeight(0.3);
+  } else {
+    noStroke();
+    trans = 0;
+  }
+  fill(0, trans);
   rect(10,10,300,20);
-  fill(255);
+  fill(255, trans);
   rect(10,10,light,20);
   
   // automated firefly spawns
@@ -141,7 +180,7 @@ function draw() {
     }
   }
   
-  if (light <= 0){ // END SCREEN -- when light runs out
+  if (light <= 0 || death ){ // END SCREEN -- when light runs out
     print('GAME OVER');
     print('PRESS ANY KEY TO CONTINUE PLAYING');
     
@@ -154,7 +193,7 @@ function draw() {
     bonesCrunchingEffect.setVolume(1); // https://p5js.org/reference/#/p5.SoundFile/setVolume
     
     image(endScreen, 180, 200);
-    fill(255,0,0,100);
+    fill(255,0,0,100); // red overlay
     rect(0,0,width,height);
     
     for ( let i = fireflies.length - 1; i >= 0; i-- ){ // makes old sprite disappear from canvas
@@ -167,13 +206,18 @@ function draw() {
   if ( restart ){
     light += 300;
     score = 0;
+    count = 0;
     restart = false;
+    death = false;
     forestAmbience.setVolume(1);
     bonesCrunchingEffect.setVolume(0.05);
   }
   
+  if (light > 0 && death == false){
+    trans = 10;
+  }
   image(vignette,0,0);
-  fill(255,10);
+  fill(255,trans);
   rect(10,10,light,20);
 }
 
@@ -181,7 +225,7 @@ function keyPressed(){
   if ( light <= 0 ){
     restart = true;
     player.visible = true;
-    bonesCrunchingEffect.stop(0);
+    bonesCrunchingEffect.setVolume(0.05);
   }
   
   if ( kb.pressing('left') ){
@@ -234,3 +278,25 @@ class Firefly{
     this.collected = true;
   }
 }
+
+class Monster{
+  constructor(imgHeight,index,posX){
+    this.position = createVector(posX,780 - imgHeight);
+    this.speed = 10;
+    this.type = index;
+  }
+  
+  drawMonster(monsterImage){  
+    image(monsterImage,this.position.x,this.position.y);
+  }
+  
+  updateMonster(){
+    if ( this.type % 2 == 0 ){
+      this.position.x -= this.speed;
+    } else {
+      this.position.x += this.speed;
+    }
+  }
+}
+
+
